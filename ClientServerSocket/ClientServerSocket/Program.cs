@@ -11,8 +11,12 @@ namespace ClientServerSocket
         static void Main(string[] args)
         {
             int port = int.Parse(ConfigurationManager.AppSettings["Port"]);
-            string host = ConfigurationManager.AppSettings["Host"];
-            IPEndPoint iPEndPoint = new IPEndPoint(IPAddress.Parse(host), port);
+
+            if (args.Length > 0)
+            {
+                port = int.Parse(args[0]);
+            }
+            IPEndPoint iPEndPoint = new IPEndPoint(IPAddress.Any, port);
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -20,12 +24,12 @@ namespace ClientServerSocket
             {
                 socket.Bind(iPEndPoint);
                 socket.Listen(10);
-
-                Console.WriteLine("Cerver was started. Waiting connections");
+                Socket handler = socket.Accept();
+                Console.WriteLine("Server was started. Waiting connections");
 
                 while (true)
                 {
-                    Socket handler = socket.Accept();
+                    
                     StringBuilder message = new StringBuilder();
                     int bytes = 0;
                     byte[] data = new byte[256];
@@ -40,13 +44,14 @@ namespace ClientServerSocket
                     Console.WriteLine($"{DateTime.Now.ToShortDateString()}: {message}");
 
                     // send ansver
-                    string ansver = "Message delivered";
+                    string ansver = $"IP address {handler.LocalEndPoint}, Sum: {message}";
                     data = Encoding.Unicode.GetBytes(ansver);
                     handler.Send(data);
-
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
+                   
                 }
+
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
             }
             catch (Exception ex)
             {
